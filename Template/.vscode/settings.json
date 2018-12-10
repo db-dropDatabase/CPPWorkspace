@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "iostream": "cpp"
+    },
+    "c-cpp-flylint.clang.executable": "C:/cygwin64/bin/clang-5.0.exe",
+    "c-cpp-flylint.flexelint.enable": false,
+    "c-cpp-flylint.clang.enable": false,
+    "c-cpp-flylint.cppcheck.inconclusive": true,
+    "c-cpp-flylint.cppcheck.verbose": true,
+    "c-cpp-flylint.cppcheck.executable": "C:/cygwin64/bin/cppcheck.exe"
+}
