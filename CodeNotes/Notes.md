@@ -75,3 +75,12 @@ template<typename T> inline void max(const T& a, const T& b) {
     return a > b ? a : b;
 }
 ```
+
+Smart Pointers, pointers that auto-delete
+```C++
+// single-instance smart pointer, does not copy well
+std::tr1::auto_ptr<Thing> obj(new Thing());
+// mult-instance pointer, counts references so is destroyed when all instances are destroyed
+std::tr1::shared_ptr<Thing> obj1(new Thing();
+
+```

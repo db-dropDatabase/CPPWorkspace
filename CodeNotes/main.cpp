@@ -11,11 +11,11 @@ class StringThing {
     // member initialization list! It's so cool!
     : str(string) {}
 
-    const int getLength(const string str) const {
+    int getLength(const string str) const {
       return str.length();
     }
 
-    const int getLength() const {
+    int getLength() const {
       return getLength(this->str);
     }
 
