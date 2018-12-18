@@ -71,7 +71,7 @@ int someclass::dothing(int thing) const;
 
 Max template function (instead of preprocessor macro):
 ```C++
-template<typename T> inline void max(const T& a, const T& b) {
+template<typename T> inline T max(const T& a, const T& b) {
     return a > b ? a : b;
 }
 ```
@@ -84,3 +84,6 @@ std::tr1::auto_ptr<Thing> obj(new Thing());
 std::tr1::shared_ptr<Thing> obj1(new Thing();
 
 ```
+
+When copying into empty memory **always** use the new operator. Otherwise weird things can happen.
+Also, when determining an address of an element in an array use `&thing[index]` as opposed to `thing + sizeof(T)*index`, because the later won't work for some reason.
