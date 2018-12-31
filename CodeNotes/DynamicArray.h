@@ -44,12 +44,6 @@ namespace Dynamic {
 		T& operator[](const size_t index) { return array[index]; };
 
 		/**
-		 * Override the = operator and do an in-place copy
-		 * NOTE: All assignments are actual copies of the list (equivalent to list.copy())
-		 */
-		Array<T>& operator=(const Array<T>& rhs);
-
-		/**
 		 * allow pushing back elements to the array
 		 * @param T& elem teh element to add to the array
 		 * NOTE: By adding the element, please ensure the element is only accesible from the Array, as the Array may
@@ -62,7 +56,7 @@ namespace Dynamic {
 		 * @param ray The dynamic array to pull data from
 		 * @param length The length of the array, if it's a static array
 		 */
-		size_t extend(const Array<T>& extendEay);
+		size_t extend(const Array<T>& extendRay);
 		size_t extend(const T extendRay[]);
 
 		/**
@@ -127,13 +121,19 @@ namespace Dynamic {
 		inline size_t allocated() const { return array.allocated(); }
 	private:
 		/**
-		 * utility function to do a cheap 3/2, always rounding up.
-		 * NOTE: will always return a number > or < 0
-		 * @param number the number to multiply by 1.5
+		 *	Utility function to replace array with an expanded array
+		 *	@param newCapacity the new capacity of array, in units of T
 		 */
-		template<typename I>
-		static I tH(const I num);
+		void m_expand(const size_t newCapacity);
+		/**
+		 * Another Utility function, checks if the capacity of the array
+		 * is large enough to support n additional elements, and if not
+		 * expands it
+		 * @param newElemCount the number of new elements we want to add
+		 * @returns the new capacity
+		 */
+		size_t m_checkExpansion(const size_t newElemCount);
 		/** the storage */
-		Storage array;
+		Storage m_array;
 	};
 };

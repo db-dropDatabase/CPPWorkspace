@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <algorithm> 
+#include <utility>
 
 namespace Dynamic {
 	template<class T>
@@ -24,20 +25,26 @@ namespace Dynamic {
 		/** Copy constructor, performs a deep copy using placement new of the same capacity */
 		Storage(const Storage<T>& rhs);
 
+		/** Move ctor, transfer ownership of the memory block (with code in assignment operator) */
+		Storage(Storage<T>&& rhs) 
+			: capacity(0)
+			, length(0)
+			, arrayPtr(nullptr) { *this = std::move(rhs); }
+
 		/** Dtor */
 		~Storage();
 
-		/** get the raw pointer to play with it */
+		/** get the raw pointer */
 		inline const T* getRaw() const { return arrayPtr };
 
 		/** Override the array bracket operator */
 		const T& operator[](const size_t index) const;
 		T& operator[](const size_t index);
 
-		/**
-		 * Assign using a deep copy.
-		 */
-		Storage<T>& operator=(const Storage<T>& rhs);
+		/** Assign by transfering ownership of the data block */
+		Storage<T>& operator=(Storage<T>&& rhs);
+		/** Assign by creating a copy */
+		Storage<T>& operator=(const Storage<T> rhs);
 
 		/**
 		 * allow pushing back elements to the array
@@ -48,13 +55,14 @@ namespace Dynamic {
 		 * decide to destroy the element before you're done with it otherwise.
 		 * @returns the new length of the array
 		 */
-		size_t append(const T& elem) { const T ray[] = { elem }; return append(ray, 1); }
+		inline size_t append(const T& elem) { const T ray[] = { elem }; return append(ray, 1); }
+		inline size_t append(const Storage& elems) { return append(elems, elems.size()); }
+		inline size_t append(const Storage& elems, const size_t count, const size_t start = 0) { return append(elems.getRaw(), count, start); }
 		size_t append(const T elems[], const size_t count, const size_t start = 0);
 
 		/**
 		 * allow deleting the last element of the array
 		 * @returns the new length of the array
-		 *
 		 */
 		size_t truncate(size_t count = 1);
 
@@ -63,24 +71,33 @@ namespace Dynamic {
 		inline size_t allocated() const { return capacity; }
 	private:
 		/**
+		 * utility function to do a cheap 3/2, always rounding up.
+		 * NOTE: will always return a number > or < 0
+		 * @param number the number to multiply by 1.5
+		 */
+		template<typename I>
+		static I s_tH(const I num);
+
+		/**
 		 * Utility function to allocate the weird array needed
 		 * @param size the size of the array to allocate, in units of T
 		 */
-		static T* alloc(const size_t size);
-
+		static T* s_alloc(const size_t size);
+		
 		/**
-		 * Same as above, but deallocating instead
-		 * @param ray the array to deallocate
-		 * @param size the number of constructed elements in the array
-		 * @param allocated the size of the array, in units of T
+		 * Same as above, but deallocating instead. Sets arrayPtr to nullptr, and zeros internal vars
 		 */
-		static void dealloc(T* ray, const size_t size);
+		void m_deallocSelf();
+		
+		/**
+		 * Utility function to check if the array needs expanding, and if so expand it
+		 * @param newElemCount the # of new elements we would like to add
+		 * @returns the new capacity
+		 */
+		size_t m_checkExpansion(const size_t newElemCount);
 
-		const size_t capacity;
-		size_t length;
-		T* arrayPtr;
-		/** used when swapping the arrayPtr to make sure that all memory is deallocated */
-		T* tempArrayPtr = nullptr;
-		size_t tempLength = 0;
+		size_t m_capacity;
+		size_t m_length;
+		T* m_arrayPtr;
 	};
 };

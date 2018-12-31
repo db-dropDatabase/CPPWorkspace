@@ -4,104 +4,131 @@ using namespace Dynamic;
 
 template<class T>
 Storage<T>::Storage(const size_t size = 0)
-	: capacity(size)
-	, length(0)
-	, arrayPtr(alloc(size)) {
+	: m_capacity(size)
+	, m_length(0)
+	, m_arrayPtr(s_alloc(size)) {
 	// sanity check
-	assert(capacity < 1000);
+	assert(m_capacity < 1000);
 }
 
 template<class T>
 Storage<T>::Storage(const Storage<T>& copyFrom, const size_t size)
-	: capacity(size)
-	, length(0)
-	, arrayPtr(alloc(capacity)) {
+	: m_capacity(size)
+	, m_length(0)
+	, m_arrayPtr(s_alloc(m_capacity)) {
 	// sanity!
-	assert(capacity >= copyFrom.allocated());
-	assert(capacity < 1000);
-	assert(copyFrom.size() <= capacity);
+	assert(m_capacity >= copyFrom.allocated());
+	assert(m_capacity < 1000);
+	assert(copyFrom.size() <= m_capacity);
 	// copy the elements from copyFrom to our array
-	append(copyFrom.getRaw(), copyFrom.size());
+	m_append(copyFrom);
 }
 
 template<class T>
 Storage<T>::Storage(const Storage<T>& rhs)
-	: capacity(rhs.allocated())
-	, length(0)
-	, arrayPtr(alloc(capacity)) {
+	: m_capacity(rhs.allocated())
+	, m_length(0)
+	, m_arrayPtr(s_alloc(m_capacity)) {
 	// sanity!
-	assert(capacity < 1000);
-	assert(copyFrom.size() <= capacity);
+	assert(m_capacity < 1000);
+	assert(copyFrom.size() <= m_capacity);
 	// copy the elements from copyFrom to our array
-	append(copyFrom.getRaw(), copyFrom.size());
+	m_append(rhs);
 }
 
 template<class T>
 Storage<T>::~Storage() {
 	// deallocate our array!
-	dealloc(arrayPtr, length);
-	// and deallocate our temporary array, if it exists
-	if (tempArrayPtr != nullptr) dealloc(tempArrayPtr, tempLength);
+	m_deallocSelf();
 }
 
 template<class T>
-Storage<T>& Storage<T>::operator=(const Storage<T>& rhs) {
+Storage<T>& Storage<T>::operator=(Storage<T>&& rhs) {
+	// ensure we're not moving rhs into istelf
+	assert(this != &rhs);
+	// copy and swap, though nice, is rather slow
+	// instead we switch the buffers, and deallocate one of them
+	std::swap(rhs.m_arrayPtr, m_arrayPtr);
+	std::swap(rhs.m_length, m_length);
+	std::swap(rhs.m_capacity, m_capacity);
+	// deallocate rhs
+	rhs.m_deallocSelf();
+	return *this;
+}
+
+template<class T>
+Storage<T>& Storage<T>::operator=(const Storage<T> rhs) {
 	// copy and swap!
-	// create a copy of rhs's data into the temporary buffers
-	tempLength = 0;
-	tempArrayPtr = alloc(rhs.allocated());
-	for (; tempLength < rhs.size(); tempLength++) new (&tempArrayPtr[tempLength]) T(rhs[tempLength]);
-	// swap the our array with the copied array
-	std::swap(arrayPtr, tempArrayPtr);
-	std::swap(length, tempLength);
-	capacity = rhs.allocated();
-	// deallocate the old buffer
-	dealloc(tempArrayPtr, tempLength);
-	// and back to zeros with our temp varibles
-	tempArrayPtr = nullptr;
-	tempLength = 0;
+	// the copy is implicit in pass-by-value, and now we move rhs into ourselves!
+	*this = std::move(rhs);
+	return *this;
 }
 
 template<class T>
 const T& Storage<T>::operator[](const size_t index) const {
-	assert(index < length);
-	return arrayPtr[index];
+	assert(index < m_length);
+	return m_arrayPtr[index];
 }
 
 template<class T>
 T& Storage<T>::operator[](const size_t index) {
-	assert(index < length);
-	return arrayPtr[index];
+	assert(index < m_length);
+	return m_arrayPtr[index];
 }
 
 template<class T>
 size_t Storage<T>::append(const T elems[], const size_t count, const size_t start = 0) {
-	// sanity check
-	assert(length + count <= capacity);
+	// check if expansion is necessary
+	m_checkExpansion(count);
 	// start copying using placement new, incrementing the length as we go!
-	for (size_t i = 0; i < count; length++, i++) new (&arrayPtr[length]) T(elems[i]);
+	for (size_t i = 0; i < count; m_length++, i++) new (&m_arrayPtr[m_length]) T(elems[i]);
 	// return the new length
-	return length;
+	return m_length;
 }
 
 template<class T>
 size_t Storage<T>::truncate(size_t count = 1) {
-	assert(count >= length);
+	assert(count <= m_length);
 	// decrement length, and call dtor of the removed object
-	for (; count > 0; --length, count--) arrayPtr[length].~T();
+	for (; count > 0; --m_length, count--) m_arrayPtr[m_length].~T();
 	// return the new length
-	return length;
+	return m_length;
 }
 
 template<class T>
-inline T* Storage<T>::alloc(const size_t size) {
+inline T* Storage<T>::s_alloc(const size_t size) {
 	return reinterpret_cast<T*>(new char[sizeof(T)*size]);
 }
 
 template<class T>
-inline void Storage<T>::dealloc(T* ray, const size_t size) {
-	// call the dtors of all the elements
-	for (size_t i = 0; i < size; i++) ray[i].~T();
-	// deallocate the array
-	delete[] reinterpret_cast<char*>(ray);
+template<typename I>
+inline I Storage<T>::s_tH(const I num) {
+	// catch integer overflow for type
+	assert(num < std::numeric_limits<I>::max() / 3 - 1);
+	return ((num * 3) >> 1) + 1;
+}
+
+template<class T>
+size_t Storage<T>::m_checkExpansion(const size_t newElemCount) {
+	// if the # of new elements and the length exceed our capacity
+	if (m_length + newElemCount > m_capacity) {
+		// use the move operator on ourselves, with a temporary copy of ourselves that is expanded
+		*this = std::move(Storage(*this, s_tH(m_length + newElemCount));
+	}
+	// return the capacity
+	return m_capacity;
+}
+
+template<class T>
+inline void Storage<T>::m_deallocSelf() {
+	if (m_arrayPtr != nullptr) {
+		// call the dtors of all the elements
+		for (; m_length > 0; m_length--) m_arrayPtr[m_length].~T();
+		// deallocate the array
+		delete[] reinterpret_cast<char*>(m_arrayPtr);
+		// set it to nullptr for saftey
+		m_arrayPtr = nullptr;
+		// and reset the capacity
+		m_capacity = 0;
+	}
 }
