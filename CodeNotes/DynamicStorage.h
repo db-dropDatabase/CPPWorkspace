@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <algorithm> 
 #include <utility>
+#include <memory>
 
 namespace Dynamic {
 	template<class T>

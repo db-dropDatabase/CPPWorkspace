@@ -6,7 +6,7 @@ template<class T>
 Storage<T>::Storage(const size_t size = 0)
 	: m_capacity(size)
 	, m_length(0)
-	, m_arrayPtr(s_alloc(size)) {
+	, m_arrayPtr(s_alloc(m_capacity)) {
 	// sanity check
 	assert(m_capacity < 1000);
 }
@@ -83,7 +83,7 @@ size_t Storage<T>::append(const T elems[], const size_t count, const size_t star
 		*this = std::move(Storage(*this, s_tH(m_length + count)));
 	}
 	// start copying using placement new, incrementing the length as we go!
-	for (size_t i = 0; i < count; m_length++, i++) new (&m_arrayPtr[m_length]) T(elems[i]);
+	for (size_t i = 0; i < count; m_length++, i++) ::new (&m_arrayPtr[m_length]) T(elems[i]);
 	// return the new length
 	return m_length;
 }
@@ -99,7 +99,7 @@ size_t Storage<T>::truncate(size_t count = 1) {
 
 template<class T>
 inline T* Storage<T>::s_alloc(const size_t size) {
-	return reinterpret_cast<T*>(new char[sizeof(T)*size]);
+	return std::allocator<T>().allocate(size);
 }
 
 template<class T>
@@ -116,7 +116,7 @@ inline void Storage<T>::m_deallocSelf() {
 		// call the dtors of all the elements
 		for (; m_length > 0; m_length--) m_arrayPtr[m_length - 1].~T();
 		// deallocate the array
-		delete[] reinterpret_cast<char*>(m_arrayPtr);
+		std::allocator<T>().deallocate(m_arrayPtr, m_capacity);
 		// set it to nullptr for saftey
 		m_arrayPtr = nullptr;
 		// and reset the capacity
