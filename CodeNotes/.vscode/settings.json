@@ -33,7 +33,10 @@
         "xstddef": "cpp",
         "xstring": "cpp",
         "xtr1common": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "vector": "cpp",
+        "string": "cpp",
+        "tuple": "cpp"
     },
     "c-cpp-flylint.clang.executable": "C:/cygwin64/bin/clang-5.0.exe",
     "c-cpp-flylint.flexelint.enable": false,

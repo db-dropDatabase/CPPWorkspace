@@ -18,19 +18,19 @@ int main(int argc, const char *argv[])
 	{
 		DynamicArray<StringThing> thing;
 
-		thing.push(StringThing("String1"));
+		thing.append(StringThing("String1"));
 
 		cout << thing.size() << endl;
 		for (size_t i = 0; i < thing.size(); i++) cout << thing[i].str << ", ";
 		cout << endl;
 
-		thing.push(StringThing("String2"));
+		thing.append(StringThing("String2"));
 
 		cout << thing.size() << endl;
 		for (size_t i = 0; i < thing.size(); i++) cout << thing[i].str << ", ";
 		cout << endl;
 
-		thing.push(StringThing("String3"));
+		thing.append(StringThing("String3"));
 
 		cout << thing.size() << endl;
 		for (size_t i = 0; i < thing.size(); i++) cout << thing[i].str << ", ";
@@ -46,8 +46,10 @@ int main(int argc, const char *argv[])
 		for (size_t i = 0; i < thing.size(); i++) cout << thing[i].str << ", ";
 		cout << endl;
 
-		thing2.slice(1, 2);
+		thing2.resize(1, 2);
 		thing2.extend(thing);
+		thing2.insert(1, StringThing("huh"));
+		thing2.remove(2);
 
 		cout << thing2.size() << endl;
 		for (size_t i = 0; i < thing2.size(); i++) cout << thing2[i].str << ", ";
