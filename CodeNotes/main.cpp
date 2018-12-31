@@ -1,7 +1,8 @@
 
 #include <string>
 #include <iostream>
-#include "DynamicArray.cpp"
+#include "DynamicStorage.h"
+#include "DynamicStorage.cpp"
 
 using namespace std;
 
@@ -16,7 +17,7 @@ public:
 int main(int argc, const char *argv[])
 {
 	{
-		DynamicArray<StringThing> thing;
+		Dynamic::Storage<StringThing> thing;
 
 		thing.append(StringThing("String1"));
 
@@ -38,7 +39,7 @@ int main(int argc, const char *argv[])
 
 		//thing[17];
 
-		DynamicArray<StringThing> thing2 = thing;
+		Dynamic::Storage<StringThing> thing2 = thing;
 
 		thing = thing2;
 
@@ -46,10 +47,8 @@ int main(int argc, const char *argv[])
 		for (size_t i = 0; i < thing.size(); i++) cout << thing[i].str << ", ";
 		cout << endl;
 
-		thing2.resize(1, 2);
-		thing2.extend(thing);
-		thing2.insert(1, StringThing("huh"));
-		thing2.remove(2);
+
+		thing2.append(thing);
 
 		cout << thing2.size() << endl;
 		for (size_t i = 0; i < thing2.size(); i++) cout << thing2[i].str << ", ";

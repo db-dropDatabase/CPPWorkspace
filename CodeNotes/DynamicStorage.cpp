@@ -21,7 +21,7 @@ Storage<T>::Storage(const Storage<T>& copyFrom, const size_t size)
 	assert(m_capacity < 1000);
 	assert(copyFrom.size() <= m_capacity);
 	// copy the elements from copyFrom to our array
-	m_append(copyFrom);
+	append(copyFrom);
 }
 
 template<class T>
@@ -31,9 +31,9 @@ Storage<T>::Storage(const Storage<T>& rhs)
 	, m_arrayPtr(s_alloc(m_capacity)) {
 	// sanity!
 	assert(m_capacity < 1000);
-	assert(copyFrom.size() <= m_capacity);
+	assert(rhs.size() <= m_capacity);
 	// copy the elements from copyFrom to our array
-	m_append(rhs);
+	append(rhs);
 }
 
 template<class T>
@@ -47,7 +47,7 @@ Storage<T>& Storage<T>::operator=(Storage<T>&& rhs) {
 	// ensure we're not moving rhs into istelf
 	assert(this != &rhs);
 	// copy and swap, though nice, is rather slow
-	// instead we switch the buffers, and deallocate one of them
+	// instead we switch the storage objects, and deallocate one of them
 	std::swap(rhs.m_arrayPtr, m_arrayPtr);
 	std::swap(rhs.m_length, m_length);
 	std::swap(rhs.m_capacity, m_capacity);
@@ -57,10 +57,9 @@ Storage<T>& Storage<T>::operator=(Storage<T>&& rhs) {
 }
 
 template<class T>
-Storage<T>& Storage<T>::operator=(const Storage<T> rhs) {
+Storage<T>& Storage<T>::operator=(const Storage<T>& rhs) {
 	// copy and swap!
-	// the copy is implicit in pass-by-value, and now we move rhs into ourselves!
-	*this = std::move(rhs);
+	*this = std::move(Storage(rhs));
 	return *this;
 }
 
@@ -78,8 +77,11 @@ T& Storage<T>::operator[](const size_t index) {
 
 template<class T>
 size_t Storage<T>::append(const T elems[], const size_t count, const size_t start = 0) {
-	// check if expansion is necessary
-	m_checkExpansion(count);
+	// if the # of new elements and the length exceed our capacity
+	if (m_length + count > m_capacity) {
+		// use the move operator on ourselves, with a temporary copy of ourselves that is expanded
+		*this = std::move(Storage(*this, s_tH(m_length + count)));
+	}
 	// start copying using placement new, incrementing the length as we go!
 	for (size_t i = 0; i < count; m_length++, i++) new (&m_arrayPtr[m_length]) T(elems[i]);
 	// return the new length
@@ -109,21 +111,10 @@ inline I Storage<T>::s_tH(const I num) {
 }
 
 template<class T>
-size_t Storage<T>::m_checkExpansion(const size_t newElemCount) {
-	// if the # of new elements and the length exceed our capacity
-	if (m_length + newElemCount > m_capacity) {
-		// use the move operator on ourselves, with a temporary copy of ourselves that is expanded
-		*this = std::move(Storage(*this, s_tH(m_length + newElemCount));
-	}
-	// return the capacity
-	return m_capacity;
-}
-
-template<class T>
 inline void Storage<T>::m_deallocSelf() {
 	if (m_arrayPtr != nullptr) {
 		// call the dtors of all the elements
-		for (; m_length > 0; m_length--) m_arrayPtr[m_length].~T();
+		for (; m_length > 0; m_length--) m_arrayPtr[m_length - 1].~T();
 		// deallocate the array
 		delete[] reinterpret_cast<char*>(m_arrayPtr);
 		// set it to nullptr for saftey

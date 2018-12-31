@@ -99,10 +99,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DynamicArray.cpp" />
-    <ClCompile Include="DynamicArray.h" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="DynamicStorage.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DynamicStorage.h" />

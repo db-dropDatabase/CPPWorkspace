@@ -1,9 +1,20 @@
 #pragma once
 /**
- * Exception saftey is difficult. One solution I am attempting is to have fixed capacity
- * storage class (Dynamic::Storage) which is then utilized by Dynamic::Array to create
- * a dynamic capacity array. This should hopefully make my memory less prone to leaking
- * during catastrophic failure when I am doing things such as copy/swap.
+ * One of the more annoying requirements of CS162 is forcing the use of dynamically allocated arrays instead of vectors,
+ * which, though probably faster, results in a lot of headaches and memeory leaks. As a result, I've decided to make my
+ * own implementatiom of a dynamic array {@link https://en.wikipedia.org/wiki/Dynamic_array} based on the Python list implementation,
+ * {@link https://docs.python.org/3/tutorial/datastructures.html} which I will use in future labs. This implementation
+ * will hopefully use the features of modern C++ to make the use of dynamic memory simple, but also uphold the archaic
+ * requirements of CS162.
+ *
+ * CS162 Rules of engagement:
+ *  * No standard library containers (vector, list, etc.)
+ *  * No smart pointers
+ *  * I kinda have to use template functions if I want to make this work, but I'm not quite sure if I'm supposed to
+ *
+ * I have heavily relied on Effective C++ third edition and
+ * https://codereview.stackexchange.com/questions/60484/stl-vector-implementation
+ * for my knowlege on C++.
  */
 
 #include <assert.h>
@@ -35,7 +46,7 @@ namespace Dynamic {
 		~Storage();
 
 		/** get the raw pointer */
-		inline const T* getRaw() const { return arrayPtr };
+		inline const T* getRaw() const { return m_arrayPtr; };
 
 		/** Override the array bracket operator */
 		const T& operator[](const size_t index) const;
@@ -44,7 +55,7 @@ namespace Dynamic {
 		/** Assign by transfering ownership of the data block */
 		Storage<T>& operator=(Storage<T>&& rhs);
 		/** Assign by creating a copy */
-		Storage<T>& operator=(const Storage<T> rhs);
+		Storage<T>& operator=(const Storage<T>& rhs);
 
 		/**
 		 * allow pushing back elements to the array
@@ -67,8 +78,8 @@ namespace Dynamic {
 		size_t truncate(size_t count = 1);
 
 		/** getters */
-		inline size_t size() const { return length;  }
-		inline size_t allocated() const { return capacity; }
+		inline size_t size() const { return m_length;  }
+		inline size_t allocated() const { return m_capacity; }
 	private:
 		/**
 		 * utility function to do a cheap 3/2, always rounding up.
@@ -88,13 +99,6 @@ namespace Dynamic {
 		 * Same as above, but deallocating instead. Sets arrayPtr to nullptr, and zeros internal vars
 		 */
 		void m_deallocSelf();
-		
-		/**
-		 * Utility function to check if the array needs expanding, and if so expand it
-		 * @param newElemCount the # of new elements we would like to add
-		 * @returns the new capacity
-		 */
-		size_t m_checkExpansion(const size_t newElemCount);
 
 		size_t m_capacity;
 		size_t m_length;
