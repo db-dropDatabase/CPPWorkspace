@@ -3,7 +3,7 @@
 using namespace Dynamic;
 
 template<class T>
-Storage<T>::Storage(const size_t size = 0)
+Storage<T>::Storage(const size_t size)
 	: m_capacity(size)
 	, m_length(0)
 	, m_arrayPtr(s_alloc(m_capacity)) {
@@ -37,13 +37,21 @@ Storage<T>::Storage(const Storage<T>& rhs)
 }
 
 template<class T>
+Storage<T>::Storage(Storage&& rhs) noexcept
+	: m_capacity(0)
+	, m_length(0)
+	, m_arrayPtr(nullptr) { 
+	*this = std::move(rhs); 
+}
+
+template<class T>
 Storage<T>::~Storage() {
 	// deallocate our array!
 	m_deallocSelf();
 }
 
 template<class T>
-Storage<T>& Storage<T>::operator=(Storage<T>&& rhs) {
+Storage<T>& Storage<T>::operator=(Storage<T>&& rhs) noexcept {
 	// ensure we're not moving rhs into istelf
 	assert(this != &rhs);
 	// copy and swap, though nice, is rather slow
@@ -76,20 +84,34 @@ T& Storage<T>::operator[](const size_t index) {
 }
 
 template<class T>
-size_t Storage<T>::append(const T elems[], const size_t count, const size_t start = 0) {
+size_t Storage<T>::append(const T elems[], const size_t count, const size_t start) {
 	// if the # of new elements and the length exceed our capacity
 	if (m_length + count > m_capacity) {
 		// use the move operator on ourselves, with a temporary copy of ourselves that is expanded
 		*this = std::move(Storage(*this, s_tH(m_length + count)));
 	}
 	// start copying using placement new, incrementing the length as we go!
-	for (size_t i = 0; i < count; m_length++, i++) ::new (&m_arrayPtr[m_length]) T(elems[i]);
+	for (size_t i = start; i < count; m_length++, i++) ::new (&m_arrayPtr[m_length]) T(elems[i]);
 	// return the new length
 	return m_length;
 }
 
 template<class T>
-size_t Storage<T>::truncate(size_t count = 1) {
+template<class... Args>
+size_t Storage<T>::emplace(Args&& ...args) {
+	// if the # of new elements and the length exceed our capacity
+	if (m_length + 1 > m_capacity) {
+		// use the move operator on ourselves, with a temporary copy of ourselves that is expanded
+		*this = std::move(Storage(*this, s_tH(m_length + 1)));
+	}
+	// emplace using placement new!
+	::new (&m_arrayPtr[m_length]) T(std::forward<Args>(args)...);
+	// increment length!
+	return ++m_length;
+}
+
+template<class T>
+size_t Storage<T>::truncate(size_t count) {
 	assert(count <= m_length);
 	// decrement length, and call dtor of the removed object
 	for (; count > 0; --m_length, count--) m_arrayPtr[m_length].~T();

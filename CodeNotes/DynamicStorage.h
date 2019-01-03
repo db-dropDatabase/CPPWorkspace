@@ -38,23 +38,20 @@ namespace Dynamic {
 		Storage(const Storage<T>& rhs);
 
 		/** Move ctor, transfer ownership of the memory block (with code in assignment operator) */
-		Storage(Storage<T>&& rhs) 
-			: capacity(0)
-			, length(0)
-			, arrayPtr(nullptr) { *this = std::move(rhs); }
+		Storage(Storage<T>&& rhs) noexcept;
 
 		/** Dtor */
 		~Storage();
 
 		/** get the raw pointer */
-		inline const T* getRaw() const { return m_arrayPtr; };
+		const T* getRaw() const { return m_arrayPtr; };
 
 		/** Override the array bracket operator */
 		const T& operator[](const size_t index) const;
 		T& operator[](const size_t index);
 
 		/** Assign by transfering ownership of the data block */
-		Storage<T>& operator=(Storage<T>&& rhs);
+		Storage<T>& operator=(Storage<T>&& rhs) noexcept;
 		/** Assign by creating a copy */
 		Storage<T>& operator=(const Storage<T>& rhs);
 
@@ -67,10 +64,18 @@ namespace Dynamic {
 		 * decide to destroy the element before you're done with it otherwise.
 		 * @returns the new length of the array
 		 */
-		inline size_t append(const T& elem) { const T ray[] = { elem }; return append(ray, 1); }
-		inline size_t append(const Storage& elems) { return append(elems, elems.size()); }
-		inline size_t append(const Storage& elems, const size_t count, const size_t start = 0) { return append(elems.getRaw(), count, start); }
+		size_t append(const T& elem) { const T ray[] = { elem }; return append(ray, 1); }
+		size_t append(const Storage& elems) { return append(elems, elems.size()); }
+		size_t append(const Storage& elems, const size_t count, const size_t start = 0) { return append(elems.getRaw(), count, start); }
 		size_t append(const T elems[], const size_t count, const size_t start = 0);
+
+		/**
+		 * allow pushing to the back, but by constructing the object in place instead of the standard copy-into-place
+		 * @param elem the element to add to the array
+		 * @returns the new length of the array
+		 */
+		template<class... Args>
+		size_t emplace(Args&& ... args);
 
 		/**
 		 * allow deleting the last element of the array
@@ -79,8 +84,8 @@ namespace Dynamic {
 		size_t truncate(size_t count = 1);
 
 		/** getters */
-		inline size_t size() const { return m_length;  }
-		inline size_t allocated() const { return m_capacity; }
+		size_t size() const { return m_length;  }
+		size_t allocated() const { return m_capacity; }
 	private:
 		/**
 		 * utility function to do a cheap 3/2, always rounding up.

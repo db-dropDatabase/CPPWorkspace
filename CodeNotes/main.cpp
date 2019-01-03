@@ -25,7 +25,7 @@ int main(int argc, const char *argv[])
 		for (size_t i = 0; i < thing.size(); i++) cout << thing[i].str << ", ";
 		cout << endl;
 
-		thing.append(StringThing("String2"));
+		thing.emplace("String2");
 
 		cout << thing.size() << endl;
 		for (size_t i = 0; i < thing.size(); i++) cout << thing[i].str << ", ";
